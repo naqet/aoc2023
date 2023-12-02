@@ -1,45 +1,32 @@
 package main
 
 import (
-	"errors"
 	"log"
 	"os"
 	"strconv"
-	"github.com/naqet/aoc2023/days"
+
+	day1 "github.com/naqet/aoc2023/days/1"
 )
 
-type inputArgs struct {
-	day int
-}
-
 func main() {
-    input, err := handleInput();
-
-    if err != nil {
-        log.Fatal(err)
+    funcs := map[int]func(){
+        1: day1.Logic,
     }
 
-    dayFuncs := days.GetDayFunctions();
-
-    if input.day < 0 || input.day > len(dayFuncs) {
-        log.Fatal("Day arg is larger than number of available day functions");
-    }
-
-    funcToExec := dayFuncs[input.day];
-
-    funcToExec();
-}
-
-func handleInput() (inputArgs, error) {
 	if len(os.Args) != 2 {
-        return inputArgs{}, errors.New("Incorrect number of arguments");
+        log.Fatal("Incorrect number of args");
 	}
 
     day := os.Args[1];
 
     if day, err := strconv.Atoi(day); err == nil {
-        return inputArgs{day}, nil
-    }
+        if day < 0 || day > len(funcs) {
+            log.Fatal("Incorrect day name");
+        }
 
-    return inputArgs{}, errors.New("Day arg is not a number");
+        exec := funcs[day];
+        exec();
+    } else {
+        log.Fatal("Day arg is not a number");
+    }
 }
