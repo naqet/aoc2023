@@ -6,11 +6,13 @@ import (
 	"strconv"
 
 	day1 "github.com/naqet/aoc2023/days/1"
+	day2 "github.com/naqet/aoc2023/days/2"
 )
 
 func main() {
     funcs := map[int]func(){
         1: day1.Logic,
+        2: day2.Logic,
     }
 
 	if len(os.Args) != 2 {
