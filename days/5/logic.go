@@ -1,95 +1,193 @@
 package days
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
-
-	"github.com/naqet/aoc2023/days"
 )
 
-func Logic() {
-	input := days.ProcessInput("5")
+type seedPair struct {
+    start int
+    end int
+}
 
-	result := part1(input)
+type rangeDetails struct {
+    destination int
+    source int
+    length int
+}
+
+func Logic() {
+	seeds, blocks := getInput();
+
+	result := part1(seeds, blocks)
 	fmt.Println("Part 1: ", result)
 
-	result = part2(input)
+	result = part2(seeds, blocks);
 	fmt.Println("Part 2: ", result)
+
 }
 
-func part1(input []string) int {
-	lastEmpty := 0
-	matrix := make([][]string, 0)
-    seeds := make([]int, 0);
-	for i, line := range input {
-		if i == 0 {
-            seeds = getSeeds(line);
-		}
+func part1(input []int, blocks [][]string) int {
+    seeds := input;
+    
+    for _, v := range blocks {
+        ranges := make([]rangeDetails, 0);
 
-		if line == "" {
-			if lastEmpty != 0 {
-				matrix = append(matrix, input[lastEmpty+2:i])
-			}
-
-			lastEmpty = i
-		}
-
-        if i == len(input) - 1 {
-            matrix = append(matrix, input[lastEmpty+2:])
-        }
-	}
-
-	for _, stage := range matrix {
-        processed := make([]int, 0);
-
-		for _, stringNums := range stage {
-            nums := strings.Split(stringNums, " ");
-			destination, err := strconv.Atoi(nums[0])
-
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			source, err := strconv.Atoi(nums[1])
-
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			length, err := strconv.Atoi(nums[2])
-
-			if err != nil {
-				log.Fatal(err)
-			}
+        for _, details := range v {
+            nums := strings.Fields(details);
+            destination, _ := strconv.Atoi(nums[0]);
+            source, _ := strconv.Atoi(nums[1]);
+            length, _ := strconv.Atoi(nums[2]);
             
-            for i, v := range seeds {
-                if (v > source || v == source) && (v < source + length || v == source + length) {
-                    res := v - source;
-                    num := destination + res;
-                    if !isInArray(processed, v) {
-                        seeds[i] = num;
-                        processed = append(processed, num)
-                    }
+            ranges = append(ranges, rangeDetails{destination, source, length});
+        }
+
+        newSeeds := make([]int, 0);
+
+        for _, s := range seeds {
+            inRange := false;
+            for _, r := range ranges {
+                if r.source <= s && s < r.source + r.length {
+                    newSeeds = append(newSeeds, s - r.source + r.destination)
+                    inRange = true;
+                    break;
                 }
             }
-		}
-	}
 
-    var value int;
-
-    for i, v := range seeds {
-        if i == 0 || value > v {
-            value = v
+            if !inRange {
+                newSeeds = append(newSeeds, s);
+            }
         }
-        
+
+        seeds = newSeeds;
     }
-	return value;
+
+    lowest := seeds[0]
+
+    for _, s := range seeds {
+        if lowest > s {
+            lowest = s
+        }
+    }
+
+    return lowest;
 }
 
-func part2(input []string) int {
-    return 0;
+func part2(input []int, blocks [][]string) int {
+    seeds := make([]seedPair, 0);
+
+    for i, v := range input {
+        if i % 2 == 0 {
+            seeds = append(seeds, seedPair{v, v + input[i + 1]})
+        }
+    }
+    for _, v := range blocks {
+        ranges := make([]rangeDetails, 0);
+
+        for _, details := range v {
+            nums := strings.Fields(details);
+            destination, _ := strconv.Atoi(nums[0]);
+            source, _ := strconv.Atoi(nums[1]);
+            length, _ := strconv.Atoi(nums[2]);
+            
+            ranges = append(ranges, rangeDetails{destination, source, length});
+        }
+
+        newSeeds := make([]seedPair, 0);
+
+        for len(seeds) > 0 {
+            s := seeds[len(seeds)-1];
+            seeds = seeds[:len(seeds)-1];
+
+            overlap := false;
+
+            for _, r := range ranges {
+                os := max(s.start, r.source);
+                oe := min(s.end, r.source + r.length);
+
+                if os < oe {
+                    overlap = true;
+                    newSeeds = append(newSeeds, seedPair{os - r.source + r.destination, oe - r.source + r.destination})
+
+                    if os > s.start {
+                        seeds = append(seeds, seedPair{s.start, os});
+                    }
+
+                    if oe < s.end {
+                        seeds = append(seeds, seedPair{oe, s.end});
+                    }
+                    break;
+                }
+            }
+
+            if !overlap {
+                newSeeds = append(newSeeds, s);
+            }
+        }
+
+        seeds = newSeeds;
+    }
+
+    lowest := seeds[0].start;
+
+    for _, s := range seeds {
+        if lowest > s.start {
+            lowest = s.start
+        }
+    }
+
+    return lowest;
+}
+
+func getInput() ([]int, [][]string) {
+	file, err := os.Open("days/5/input.txt")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer file.Close()
+
+	var blocks [][]string;
+    var seeds []int;
+
+	scanner := bufio.NewScanner(file)
+
+    scanner.Scan();
+
+    text := scanner.Text();
+
+    if strings.Contains(text, "seeds") {
+        for _, v := range strings.Fields(text[7:]) {
+            num, _ := strconv.Atoi(v);
+            seeds = append(seeds, num);
+        }
+    }
+    scanner.Scan();
+
+    var newBlock []string;
+
+	for scanner.Scan() {
+        text := scanner.Text();
+        if strings.Contains(text, "map:") {
+            continue;
+        }
+
+        if text == "" {
+            blocks = append(blocks, newBlock);
+            newBlock = []string{};
+        } else {
+            newBlock = append(newBlock, text);
+        }
+	}
+
+    blocks = append(blocks, newBlock);
+
+	return seeds, blocks;
 }
 
 func getSeeds(line string) []int {
