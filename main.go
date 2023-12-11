@@ -10,6 +10,7 @@ import (
 	day3 "github.com/naqet/aoc2023/days/3"
 	day4 "github.com/naqet/aoc2023/days/4"
 	day5 "github.com/naqet/aoc2023/days/5"
+	day6 "github.com/naqet/aoc2023/days/6"
 )
 
 func main() {
@@ -19,6 +20,7 @@ func main() {
         3: day3.Logic,
         4: day4.Logic,
         5: day5.Logic,
+        6: day6.Logic,
     }
 
 	if len(os.Args) != 2 {
